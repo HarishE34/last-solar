@@ -1,0 +1,14 @@
+{
+  "sample_id": "auto-088adc52",
+  "lat": 3.7989,
+  "lon": 77.7789,
+  "has_solar": true,
+  "confidence": 0.925,
+  "pv_area_sqm_est": 2269.35,
+  "buffer_radius_sqft": 2400,
+  "qc_status": "VERIFIABLE",
+  "bbox_or_mask": "",
+  "image_metadata": {
+    "source": "OSM_PUBLIC"
+  }
+}

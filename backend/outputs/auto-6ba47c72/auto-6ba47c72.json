@@ -1,0 +1,14 @@
+{
+  "sample_id": "auto-6ba47c72",
+  "lat": null,
+  "lon": null,
+  "has_solar": true,
+  "confidence": 0.821,
+  "pv_area_sqm_est": 3954.78,
+  "buffer_radius_sqft": 2400,
+  "qc_status": "VERIFIABLE",
+  "bbox_or_mask": "",
+  "image_metadata": {
+    "source": "UPLOAD:Architecture.drawio.png"
+  }
+}
