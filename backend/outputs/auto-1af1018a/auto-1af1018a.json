@@ -1,0 +1,14 @@
+{
+  "sample_id": "auto-1af1018a",
+  "lat": null,
+  "lon": null,
+  "has_solar": false,
+  "confidence": 0.671,
+  "pv_area_sqm_est": 0.0,
+  "buffer_radius_sqft": 2400,
+  "qc_status": "NOT_VERIFIABLE",
+  "bbox_or_mask": "",
+  "image_metadata": {
+    "source": "UPLOAD:solar.jpg"
+  }
+}

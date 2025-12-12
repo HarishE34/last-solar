@@ -1,0 +1,15 @@
+{
+  "sample_id": 1765436620686,
+  "lat": null,
+  "lon": null,
+  "has_solar": false,
+  "confidence": 0.3276,
+  "pv_area_sqm_est": 197.3475,
+  "buffer_radius_sqft": 2400,
+  "qc_status": "NOT_VERIFIABLE",
+  "bbox_or_mask": "C:\\Users\\kgjag\\Downloads\\solar\\backend\\outputs\\1765436620686\\mask.png",
+  "image_metadata": {
+    "source": "UPLOAD:DHANESH MASS PIC.jpg",
+    "capture_date": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "sample_id": 1765501088651,
+  "lat": 13.0827,
+  "lon": 80.2707,
+  "has_solar": false,
+  "confidence": 0.625,
+  "pv_area_sqm_est": 0.0,
+  "buffer_radius_sqft": 2400,
+  "qc_status": "NOT_VERIFIABLE",
+  "bbox_or_mask": "",
+  "image_metadata": {
+    "source": "OSM_FROM_EXCEL"
+  }
+}

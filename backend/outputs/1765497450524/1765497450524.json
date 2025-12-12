@@ -1,0 +1,15 @@
+{
+  "sample_id": 1765497450524,
+  "lat": null,
+  "lon": null,
+  "has_solar": true,
+  "confidence": 0.5459,
+  "pv_area_sqm_est": 199.4625,
+  "buffer_radius_sqft": 1200,
+  "qc_status": "VERIFIABLE",
+  "bbox_or_mask": "C:\\Users\\kgjag\\Downloads\\solar\\backend\\outputs\\1765497450524\\mask.png",
+  "image_metadata": {
+    "source": "UPLOAD:solar.jpg",
+    "capture_date": null
+  }
+}

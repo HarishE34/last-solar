@@ -1,0 +1,14 @@
+{
+  "sample_id": 1765501564492,
+  "lat": 13.0827,
+  "lon": 80.2707,
+  "has_solar": true,
+  "confidence": 0.507,
+  "pv_area_sqm_est": 187.6875,
+  "buffer_radius_sqft": 1200,
+  "qc_status": "NOT_VERIFIABLE",
+  "bbox_or_mask": "C:\\Users\\kgjag\\Downloads\\solar\\backend\\outputs\\1765501564492\\mask.png",
+  "image_metadata": {
+    "source": "OSM_PUBLIC_EXCEL"
+  }
+}
