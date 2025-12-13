@@ -58,7 +58,7 @@ that helps governments, energy companies, and startups scale solar adoption effo
 
 
 <!-- WORKFLOW -->
-<h2>🔄 Project Workflow (5–6 Lines)</h2>
+<h2>🔄 Project Workflow </h2>
 <ul>
     <li>User enters coordinates / uploads an image / uploads a CSV file.</li>
     <li>System fetches OpenStreetMap satellite tiles or reads user-provided images.</li>
