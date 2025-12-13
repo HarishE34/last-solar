@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>SunEye Intelligence — Solar Panel Detection & Energy Estimation</title>
 
-</head>
 <body>
 
 <h1>🌞 SunEye Intelligence</h1>
