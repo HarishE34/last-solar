@@ -3,18 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>SunEye Intelligence — Solar Panel Detection & Energy Estimation</title>
-<style>
-    body { font-family: Arial, sans-serif; line-height: 1.7; padding: 20px; color: #222; }
-    h1, h2, h3 { font-weight: 700; }
-    h1 { text-align: center; font-size: 42px; margin-bottom: 10px; color: #0b6eb0; }
-    h2 { margin-top: 40px; color: #0b6eb0; }
-    pre, code { background: #f4f4f4; padding: 10px; border-radius: 6px; }
-    ul { margin-left: 20px; }
-    .section { margin-top: 30px; }
-    .center { text-align: center; }
-    .cmd-box { background: #111; color: #0f0; padding: 15px; border-radius: 10px; margin-top: 10px; font-family: Consolas; }
-    .highlight { background: #e8f5ff; padding: 15px; border-left: 5px solid #0b6eb0; border-radius: 6px; }
-</style>
+
 </head>
 <body>
 
