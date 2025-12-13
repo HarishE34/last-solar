@@ -1,9 +1,96 @@
-<h1>🧠 Model Card — SunEye Intelligence (Solar Panel Detection & Energy Estimation)</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SunEye Intelligence — Solar Panel Detection & Energy Estimation</title>
+<style>
+    body { font-family: Arial, sans-serif; line-height: 1.7; padding: 20px; color: #222; }
+    h1, h2, h3 { font-weight: 700; }
+    h1 { text-align: center; font-size: 42px; margin-bottom: 10px; color: #0b6eb0; }
+    h2 { margin-top: 40px; color: #0b6eb0; }
+    pre, code { background: #f4f4f4; padding: 10px; border-radius: 6px; }
+    ul { margin-left: 20px; }
+    .section { margin-top: 30px; }
+    .center { text-align: center; }
+    .cmd-box { background: #111; color: #0f0; padding: 15px; border-radius: 10px; margin-top: 10px; font-family: Consolas; }
+    .highlight { background: #e8f5ff; padding: 15px; border-left: 5px solid #0b6eb0; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<h1>🌞 SunEye Intelligence</h1>
+<div class="center">AI‑Powered Solar Panel Detection & Energy Estimation</div>
+
+
+<!-- DESCRIPTION -->
+<h2>📘 Description</h2>
+<p class="highlight">
+SunEye Intelligence is an AI‑driven geospatial tool designed to detect rooftop solar panels,
+segment photovoltaic regions, and estimate potential solar energy output using satellite imagery.  
+It supports image uploads, coordinates-based analysis, and bulk CSV/XLSX processing—
+making it ideal for sustainability projects, government energy audits, and hackathon innovation.
+</p>
+
+
+<!-- COMMANDS -->
+<h2>⚙️ Project Execution Commands</h2>
+
+<h3>📌 Backend Setup</h3>
+<div class="cmd-box">
+cd backend<br>
+python -m venv venv<br>
+venv\Scripts\activate<br>
+pip install uvicorn<br>
+pip install fastapi<br>
+pip install requests<br>
+pip install pandas<br>
+pip install Pillow<br>
+pip install python-multipart<br>
+</div>
+
+<h3>📌 Frontend Setup</h3>
+<div class="cmd-box">
+cd frontend<br>
+npm install<br>
+npm run dev<br>
+</div>
+
+
+<!-- PROBLEM STATEMENT -->
+<h2>🚩 Problem Statement</h2>
+<p class="highlight">
+India is rapidly expanding solar adoption, but identifying suitable rooftops and estimating solar potential  
+across large areas is time‑consuming and lacks accurate ground‑level data.  
+Manual surveys are expensive, slow, and not scalable for smart‑city development.
+</p>
+
+<h2>💡 Our Solution</h2>
+<p class="highlight">
+SunEye Intelligence automates solar panel detection using satellite imagery and AI-based segmentation.  
+It analyzes rooftops, estimates panel area, and predicts energy output—providing an end‑to‑end digital solution  
+that helps governments, energy companies, and startups scale solar adoption effortlessly.
+</p>
+
+
+<!-- WORKFLOW -->
+<h2>🔄 Project Workflow (5–6 Lines)</h2>
+<ul>
+    <li>User enters coordinates / uploads an image / uploads a CSV file.</li>
+    <li>System fetches OpenStreetMap satellite tiles or reads user-provided images.</li>
+    <li>AI model detects roofs, identifies solar panels, and generates segmentation masks.</li>
+    <li>Post‑processing refines boundaries and calculates PV area using pixel‑meter ratio.</li>
+    <li>Energy estimation generates daily & yearly production metrics.</li>
+    <li>Output includes overlay images, masks, and complete metadata.</li>
+</ul>
+
+
+<!-- MODEL CARD -->
+<h2>🧠 Model Card</h2>
 
 <h2>📌 Overview</h2>
 <p>
-    <strong>SunEye Intelligence</strong> is a geospatial AI system that analyzes satellite imagery to detect 
-    solar panels, segment PV areas, and estimate solar energy production. 
+    <strong>SunEye Intelligence</strong> is a geospatial AI system that analyzes satellite imagery 
+    to detect solar panels, segment PV areas, and estimate solar energy production. 
     The model processes OpenStreetMap tiles, uploaded images, and bulk coordinate files.
 </p>
 
@@ -16,40 +103,26 @@
     <li>Predict daily & yearly energy production.</li>
     <li>Enable large‑scale solar mapping for sustainability projects.</li>
 </ul>
-<p>
-    Designed for <strong>hackathons</strong>, <strong>research projects</strong>, and 
-    <strong>smart‑city sustainability analytics</strong>.
-</p>
+<p>Designed for <strong>hackathons, research projects, and smart‑city sustainability analytics</strong>.</p>
 
 <h2>🧰 Model Architecture</h2>
 <ol>
-    <li>
-        <strong>Roof Detection / Feature Extraction</strong><br>
-        Lightweight CNN + heuristic masking for roof region identification.
-    </li>
-    <li>
-        <strong>Solar Panel Segmentation</strong><br>
-        Segment‑anything / custom mask generator with refinement filters.
-    </li>
-    <li>
-        <strong>Post‑Processing</strong><br>
-        Morphological filtering + PV area computation.
-    </li>
-    <li>
-        <strong>Energy Estimation</strong><br>
-        <code>energy = area_m2 × panel_efficiency × performance_ratio × sun_hours</code>
-    </li>
+    <li><strong>Roof Detection / Feature Extraction</strong> — Lightweight CNN + heuristic masking.</li>
+    <li><strong>Solar Panel Segmentation</strong> — SAM/custom mask refinement.</li>
+    <li><strong>Post‑Processing</strong> — Morphological filtering + area calculation.</li>
+    <li><strong>Energy Estimation</strong> — <code>area × efficiency × performance × sun_hours</code></li>
 </ol>
 
 <h2>📡 Data Sources</h2>
 <ul>
-    <li>OpenStreetMap (OSM) raster tiles</li>
-    <li>Uploaded geospatial images (RGB)</li>
-    <li>User‑provided CSV/XLSX coordinate files</li>
+    <li>OpenStreetMap Raster Tiles</li>
+    <li>User‑uploaded satellite images</li>
+    <li>CSV/XLSX coordinate files</li>
 </ul>
-<p>No private or personally identifiable data is stored.</p>
+<p>No personal or identifiable data is collected.</p>
 
 <h2>⚙️ Inputs</h2>
+
 <h3>1️⃣ Text Mode</h3>
 <pre>{
   "input_type": "text",
@@ -58,10 +131,10 @@
 }</pre>
 
 <h3>2️⃣ Image Mode</h3>
-<p>Upload an aerial/satellite-style image.</p>
+<p>Upload any satellite‑style rooftop image.</p>
 
 <h3>3️⃣ File Mode</h3>
-<p>Bulk processing using CSV/XLSX with lat/lon columns.</p>
+<p>Bulk CSV/XLSX with Latitude & Longitude columns.</p>
 
 <h2>🟢 Outputs</h2>
 <pre>{
@@ -76,53 +149,55 @@
   "estimated_kwh_per_year": 9150.3
 }</pre>
 
-<p>Additional artifacts stored:</p>
 <ul>
-    <li><code>overlay.png</code> → PV highlight map</li>
-    <li><code>mask.png</code> → segmentation mask</li>
-    <li><code>result.json</code> → metadata</li>
+    <li><code>overlay.png</code> → Highlighted solar detection</li>
+    <li><code>mask.png</code> → Segmentation mask</li>
+    <li><code>result.json</code> → All metadata</li>
 </ul>
 
 <h2>📊 Performance</h2>
 <p>Optimized for:</p>
 <ul>
     <li>Urban & suburban rooftops</li>
-    <li>Clear, high‑contrast satellite images</li>
+    <li>Clear, high‑contrast imagery</li>
 </ul>
-<p>Performance may degrade with:</p>
+<p>Performance may drop with:</p>
 <ul>
-    <li>Poor‑quality or low‑resolution tiles</li>
-    <li>Dense vegetation</li>
-    <li>Shadow‑covered rooftops</li>
+    <li>Low‑resolution images</li>
+    <li>Vegetation cover</li>
+    <li>Heavy shadows</li>
 </ul>
 
 <h2>🧪 Evaluation</h2>
 <ul>
-    <li>IoU for segmentation</li>
-    <li>Model confidence score</li>
-    <li>Manual QC flags</li>
+    <li>Segmentation IoU</li>
+    <li>Model confidence</li>
+    <li>QC flags</li>
 </ul>
 
 <h2>🔒 Limitations</h2>
 <ul>
-    <li>Not suitable for ground‑mounted solar farms.</li>
-    <li>Accuracy depends on regional OSM tile resolution.</li>
-    <li>May misinterpret skylights, dark roofs, or shadows.</li>
+    <li>Not optimized for ground‑mounted solar farms</li>
+    <li>Dependent on satellite resolution</li>
+    <li>Possible misclassification of dark roofing materials</li>
 </ul>
 
 <h2>⚠️ Ethical Considerations</h2>
 <ul>
-    <li>Uses only publicly available satellite imagery.</li>
-    <li>No tracking of individuals or private behavior.</li>
-    <li>Detection performed at the building level.</li>
+    <li>Uses only publicly available imagery</li>
+    <li>No people, vehicles, or private activity detected</li>
+    <li>Focuses solely on rooftops</li>
 </ul>
 
 <h2>📄 License</h2>
-<p>This project is for <strong>educational</strong> and <strong>hackathon</strong> use. Please use responsibly.</p>
+<p>For educational & hackathon purposes.</p>
 
 <h2>🤝 Contributors</h2>
 <ul>
-    <li>HARISH</li>
-    <li>mr_jagii</li>
-    <li>Dhinesh</li>
+    <li><strong>HARISH E</strong></li>
+    <li><strong>DHINESH B</strong></li>
+    <li><strong>JAGADISH KG</strong></li>
 </ul>
+
+</body>
+</html>
