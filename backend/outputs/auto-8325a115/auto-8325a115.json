@@ -1,0 +1,12 @@
+{
+  "sample_id": "auto-8325a115",
+  "lat": 13.037906,
+  "lon": 80.208697,
+  "has_solar": true,
+  "confidence": 0.548,
+  "pv_area_sqm_est": 252.15,
+  "qc_status": "LIKELY_SOLAR_BUT_LOW_CONFIDENCE",
+  "estimated_kwh_per_day": 168.159,
+  "estimated_kwh_per_year": 61377.97,
+  "image_source": "OSM"
+}

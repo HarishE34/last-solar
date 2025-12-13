@@ -1,0 +1,12 @@
+{
+  "sample_id": "auto-2619ee18",
+  "lat": null,
+  "lon": null,
+  "has_solar": true,
+  "confidence": 0.74,
+  "pv_area_sqm_est": 18.600000000000005,
+  "qc_status": "VERIFIABLE",
+  "estimated_kwh_per_day": 10.044,
+  "estimated_kwh_per_year": 3666.06,
+  "image_source": "UPLOAD"
+}

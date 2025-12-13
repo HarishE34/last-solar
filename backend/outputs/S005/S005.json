@@ -3,12 +3,9 @@
   "lat": 28.7041,
   "lon": 77.1025,
   "has_solar": true,
-  "confidence": 0.964,
+  "confidence": 0.84,
   "pv_area_sqm_est": 2269.35,
-  "buffer_radius_sqft": 1200,
   "qc_status": "VERIFIABLE",
-  "bbox_or_mask": "C:\\Users\\kgjag\\Downloads\\solar\\backend\\outputs\\S005\\mask.png",
-  "image_metadata": {
-    "source": "OSM_PUBLIC"
-  }
+  "estimated_kwh_per_day": 1225.449,
+  "estimated_kwh_per_year": 447288.88
 }

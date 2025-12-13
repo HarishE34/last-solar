@@ -1,0 +1,14 @@
+{
+  "sample_id": "2.0",
+  "lat": 19.076,
+  "lon": 72.8777,
+  "has_solar": true,
+  "confidence": 0.955,
+  "pv_area_sqm_est": 2269.35,
+  "buffer_radius_sqft": 1200,
+  "qc_status": "VERIFIABLE",
+  "bbox_or_mask": "C:\\Users\\E HARISH\\OneDrive\\Desktop\\panel\\sun-eye-intelligence\\backend\\outputs\\2.0\\mask.png",
+  "image_metadata": {
+    "source": "OSM_PUBLIC"
+  }
+}

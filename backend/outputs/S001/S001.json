@@ -2,13 +2,10 @@
   "sample_id": "S001",
   "lat": 13.0827,
   "lon": 80.2707,
-  "has_solar": true,
-  "confidence": 0.902,
-  "pv_area_sqm_est": 2269.35,
-  "buffer_radius_sqft": 2400,
+  "has_solar": false,
+  "confidence": 0.821,
+  "pv_area_sqm_est": 0.0,
   "qc_status": "VERIFIABLE",
-  "bbox_or_mask": "C:\\Users\\kgjag\\Downloads\\solar\\backend\\outputs\\S001\\mask.png",
-  "image_metadata": {
-    "source": "OSM_PUBLIC"
-  }
+  "estimated_kwh_per_day": 0.0,
+  "estimated_kwh_per_year": 0.0
 }

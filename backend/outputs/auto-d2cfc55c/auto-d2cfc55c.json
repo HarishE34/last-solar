@@ -1,0 +1,12 @@
+{
+  "sample_id": "auto-d2cfc55c",
+  "lat": 11.54,
+  "lon": 79.48,
+  "has_solar": true,
+  "confidence": 0.484,
+  "pv_area_sqm_est": 252.15,
+  "qc_status": "NOT_VERIFIABLE",
+  "estimated_kwh_per_day": 136.161,
+  "estimated_kwh_per_year": 49698.77,
+  "image_source": "OSM"
+}

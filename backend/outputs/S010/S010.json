@@ -2,13 +2,10 @@
   "sample_id": "S010",
   "lat": 23.0225,
   "lon": 72.5714,
-  "has_solar": false,
-  "confidence": 0.92,
-  "pv_area_sqm_est": 0.0,
-  "buffer_radius_sqft": 2400,
+  "has_solar": true,
+  "confidence": 0.773,
+  "pv_area_sqm_est": 2269.35,
   "qc_status": "VERIFIABLE",
-  "bbox_or_mask": "",
-  "image_metadata": {
-    "source": "OSM_PUBLIC"
-  }
+  "estimated_kwh_per_day": 1225.449,
+  "estimated_kwh_per_year": 447288.88
 }

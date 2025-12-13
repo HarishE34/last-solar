@@ -1,0 +1,12 @@
+{
+  "sample_id": "auto-22ca113a",
+  "lat": null,
+  "lon": null,
+  "has_solar": false,
+  "confidence": 0.552,
+  "pv_area_sqm_est": 0,
+  "qc_status": "LIKELY_SOLAR_BUT_LOW_CONFIDENCE",
+  "estimated_kwh_per_day": 0.0,
+  "estimated_kwh_per_year": 0.0,
+  "image_source": "UPLOAD"
+}

@@ -2,15 +2,15 @@
 import io
 import math
 import os
-import datetime
 import uuid
 import typing
-from fastapi import APIRouter, UploadFile, File, Form, Body
-from fastapi.responses import JSONResponse
-from PIL import Image, ImageDraw, ImageOps
 import requests
 import pandas as pd
 
+from fastapi import APIRouter, UploadFile, File, Form, Body
+from fastapi.responses import JSONResponse
+
+from PIL import Image, ImageDraw, ImageOps
 from .models.inference import analyze_image
 from .utils import config, area, qc
 from . import storage
@@ -18,51 +18,40 @@ from . import storage
 router = APIRouter()
 
 
-# -------------------------
-# helper: fetch OSM tile (no API key)
-# -------------------------
+# ==============================
+# OSM IMAGE FETCHER (STABLE)
+# ==============================
 def fetch_osm_image(lat: float, lon: float, zoom: int = 18, size=(1024, 1024)) -> Image.Image:
-    """
-    Fetch a single OSM raster tile that covers the lat/lon (tile-based).
-    This is good for dev & small batches; for production prefer a proper imagery provider.
-    """
-    try:
-        lat_rad = math.radians(lat)
-        n = 2.0 ** zoom
-        xtile = int((lon + 180.0) / 360.0 * n)
-        ytile = int((1.0 - (math.log(math.tan(lat_rad) + (1.0 / math.cos(lat_rad))) / math.pi)) / 2.0 * n)
+    """Fetch one OSM tile based on lat/lon"""
+    lat_rad = math.radians(lat)
+    n = 2.0 ** zoom
 
-        tile_url = f"https://tile.openstreetmap.org/{zoom}/{xtile}/{ytile}.png"
-        r = requests.get(tile_url, timeout=10)
+    xtile = int((lon + 180.0) / 360.0 * n)
+    ytile = int((1 - (math.log(math.tan(lat_rad) + 1 / math.cos(lat_rad)) / math.pi)) / 2 * n)
+
+    url = f"https://tile.openstreetmap.org/{zoom}/{xtile}/{ytile}.png"
+
+    try:
+        r = requests.get(url, timeout=15)
         r.raise_for_status()
         img = Image.open(io.BytesIO(r.content)).convert("RGB")
-        if size and img.size != size:
+        if img.size != size:
             img = img.resize(size)
         return img
     except Exception as e:
-        raise RuntimeError(f"OSM tile fetch failed: {e}")
+        raise RuntimeError(f"Unable to fetch OSM image: {e}")
 
 
-# -------------------------
-# helper: find flexible column
-# -------------------------
-def find_column(df: pd.DataFrame, candidates: typing.List[str]) -> typing.Optional[str]:
-    lc = [c.lower().strip() for c in df.columns]
-    for cand in candidates:
-        for i, col in enumerate(lc):
-            if cand in col:
-                return df.columns[i]
-    return None
+# ==================================================
+# CLEAN RESPONSE FORMATTER
+# ==================================================
+def safe_response(status: int, content: dict):
+    return JSONResponse(status_code=status, content=content)
 
 
-# -------------------------
-# endpoint: analyze
-# Accepts form-data with:
-#   input_type: 'text'|'image'|'file'
-#   latitude, longitude (for text)
-#   file (csv/xlsx) for file
-#   image for image
-# -------------------------
+# ==================================================
+# MAIN ANALYZE ENDPOINT
+# ==================================================
 @router.post("/analyze")
 async def analyze(
     input_type: str = Form(...),
@@ -70,342 +59,206 @@ async def analyze(
     longitude: typing.Optional[str] = Form(None),
     file: UploadFile = File(None),
     image: UploadFile = File(None),
-    meters_per_pixel: typing.Optional[float] = Form(None),
+    meters_per_pixel: float = Form(0.1)  # default
 ):
     try:
         results = []
 
-        # ---------- TEXT input (single sample) ----------
+        # ==============================================================
+        # CASE 1: TEXT INPUT (lat/lon only)
+        # ==============================================================
         if input_type == "text":
             if not latitude or not longitude:
-                return JSONResponse(status_code=400, content={"error": "latitude & longitude required for text input"})
+                return safe_response(400, {"error": "latitude & longitude required"})
+
             lat = float(latitude)
             lon = float(longitude)
             sample_id = f"auto-{uuid.uuid4().hex[:8]}"
 
-            # fetch image and analyze
+            # Fetch satellite tile
             img = fetch_osm_image(lat, lon)
+
+            # Run inference
             inf = analyze_image(img, buffer_radius_sqft=config.BUFFER_RADIUS_SMALL_SQFT)
-            used_radius = config.BUFFER_RADIUS_SMALL_SQFT
+
+            # Second pass if no solar detected
             if not inf.get("has_solar", False):
-                used_radius = config.BUFFER_RADIUS_LARGE_SQFT
-                inf2 = analyze_image(img, buffer_radius_sqft=used_radius)
-                if inf2.get("confidence", 0.0) > inf.get("confidence", 0.0):
+                inf2 = analyze_image(img, buffer_radius_sqft=config.BUFFER_RADIUS_LARGE_SQFT)
+                if inf2.get("confidence", 0) > inf.get("confidence", 0):
                     inf = inf2
 
-            pv_area = 0.0
-            if inf.get("mask") is not None:
-                pv_area = area.mask_area_sqm(inf["mask"], meters_per_pixel=meters_per_pixel)
+            mask = inf.get("mask")
 
-            qc_value = qc.qc_status(img, inf)
+            pv_area = area.mask_area_sqm(mask, meters_per_pixel) if mask else 0
+            qc_status = qc.qc_status(img, inf)
 
-            # estimate electricity
-            panel_eff = config.PANEL_EFFICIENCY
-            perf_ratio = config.PERFORMANCE_RATIO
+            # ENERGY CALC
+            eff = config.PANEL_EFFICIENCY
+            pr = config.PERFORMANCE_RATIO
             hours = config.DEFAULT_PEAK_SUN_HOURS
-            daily_kwh = pv_area * 1000 * panel_eff * perf_ratio * hours / 1000.0
+
+            daily_kwh = pv_area * 1000 * eff * pr * hours / 1000
             yearly_kwh = daily_kwh * 365
 
-            # save outputs
-            output = {
-                "sample_id": sample_id,
-                "lat": lat,
-                "lon": lon,
-                "has_solar": bool(inf.get("has_solar", False)),
-                "confidence": float(inf.get("confidence", 0.0)),
-                "pv_area_sqm_est": float(round(pv_area, 4)),
-                "buffer_radius_sqft": used_radius,
-                "qc_status": qc_value,
-                "bbox_or_mask": "",
-                "image_metadata": {"source": "OSM_PUBLIC"}
-            }
-
-            # save mask and overlay if exists
-            if inf.get("mask") is not None:
-                storage.save_mask(sample_id, inf["mask"], name="mask.png")
-                # overlay
+            # SAVE OVERLAY
+            if mask is not None:
                 overlay = img.copy()
-                draw = ImageDraw.Draw(overlay)
-                if inf.get("bbox"):
-                    x0, y0, x1, y1 = inf["bbox"]
-                    draw.rectangle([x0, y0, x1, y1], outline="yellow", width=6)
-                try:
-                    mask_rgb = inf["mask"].convert("L").resize(img.size).point(lambda p: 255 if p > 128 else 0)
-                    mask_colored = ImageOps.colorize(mask_rgb, black="black", white="yellow")
-                    overlay = Image.blend(overlay, mask_colored, alpha=0.35)
-                except Exception:
-                    pass
-                storage.save_image(sample_id, overlay, name="overlay.png")
+                m = mask.convert("L").resize(img.size)
+                colored = ImageOps.colorize(m.point(lambda p: 255 if p > 128 else 0), "black", "yellow")
+                overlay = Image.blend(overlay, colored, alpha=0.35)
+                storage.save_image(sample_id, overlay, "overlay.png")
+                storage.save_mask(sample_id, mask, "mask.png")
             else:
-                storage.save_image(sample_id, img, name="overlay.png")
-
-            storage.save_json(sample_id, output)
-
-            # add energy estimates to output as requested
-            output["estimated_kwh_per_day"] = round(daily_kwh, 3)
-            output["estimated_kwh_per_year"] = round(yearly_kwh, 2)
-
-            results.append(output)
-            return JSONResponse(status_code=200, content={"samples": results})
-
-        # ---------- IMAGE input (single sample, auto id) ----------
-        elif input_type == "image":
-            if image is None:
-                return JSONResponse(status_code=400, content={"error": "image upload required for image input"})
-            raw = await image.read()
-            img = Image.open(io.BytesIO(raw)).convert("RGB")
-            sample_id = f"auto-{uuid.uuid4().hex[:8]}"
-            lat = None
-            lon = None
-            # run inference on upload
-            inf = analyze_image(img, buffer_radius_sqft=config.BUFFER_RADIUS_SMALL_SQFT)
-            used_radius = config.BUFFER_RADIUS_SMALL_SQFT
-            if not inf.get("has_solar", False):
-                used_radius = config.BUFFER_RADIUS_LARGE_SQFT
-                inf2 = analyze_image(img, buffer_radius_sqft=used_radius)
-                if inf2.get("confidence", 0.0) > inf.get("confidence", 0.0):
-                    inf = inf2
-
-            pv_area = 0.0
-            if inf.get("mask") is not None:
-                pv_area = area.mask_area_sqm(inf["mask"], meters_per_pixel=meters_per_pixel)
-
-            qc_value = qc.qc_status(img, inf)
-
-            panel_eff = config.PANEL_EFFICIENCY
-            perf_ratio = config.PERFORMANCE_RATIO
-            hours = config.DEFAULT_PEAK_SUN_HOURS
-            daily_kwh = pv_area * 1000 * panel_eff * perf_ratio * hours / 1000.0
-            yearly_kwh = daily_kwh * 365
+                storage.save_image(sample_id, img, "overlay.png")
 
             output = {
                 "sample_id": sample_id,
                 "lat": lat,
                 "lon": lon,
-                "has_solar": bool(inf.get("has_solar", False)),
-                "confidence": float(inf.get("confidence", 0.0)),
-                "pv_area_sqm_est": float(round(pv_area, 4)),
-                "buffer_radius_sqft": used_radius,
-                "qc_status": qc_value,
-                "bbox_or_mask": "",
-                "image_metadata": {"source": f"UPLOAD:{image.filename}"}
+                "has_solar": bool(inf.get("has_solar")),
+                "confidence": float(inf.get("confidence")),
+                "pv_area_sqm_est": round(pv_area, 3),
+                "qc_status": qc_status,
+                "estimated_kwh_per_day": round(daily_kwh, 3),
+                "estimated_kwh_per_year": round(yearly_kwh, 2),
+                "image_source": "OSM"
             }
 
-            if inf.get("mask") is not None:
-                storage.save_mask(sample_id, inf["mask"], name="mask.png")
-            storage.save_image(sample_id, img, name="overlay.png")
             storage.save_json(sample_id, output)
+            return safe_response(200, {"samples": [output]})
 
-            output["estimated_kwh_per_day"] = round(daily_kwh, 3)
-            output["estimated_kwh_per_year"] = round(yearly_kwh, 2)
+        # ==============================================================
+        # CASE 2: DIRECT IMAGE UPLOAD
+        # ==============================================================
+        if input_type == "image":
+            if image is None:
+                return safe_response(400, {"error": "image file required"})
 
-            results.append(output)
-            return JSONResponse(status_code=200, content={"samples": results})
+            img = Image.open(io.BytesIO(await image.read())).convert("RGB")
+            sample_id = f"auto-{uuid.uuid4().hex[:8]}"
 
-        # ---------- FILE input (csv or xlsx) ----------
-        elif input_type == "file":
+            inf = analyze_image(img, buffer_radius_sqft=config.BUFFER_RADIUS_SMALL_SQFT)
+
+            if not inf.get("has_solar"):
+                inf2 = analyze_image(img, buffer_radius_sqft=config.BUFFER_RADIUS_LARGE_SQFT)
+                if inf2.get("confidence", 0) > inf.get("confidence", 0):
+                    inf = inf2
+
+            mask = inf.get("mask")
+            pv_area = area.mask_area_sqm(mask, meters_per_pixel) if mask else 0
+            qc_status = qc.qc_status(img, inf)
+
+            eff = config.PANEL_EFFICIENCY
+            pr = config.PERFORMANCE_RATIO
+            hours = config.DEFAULT_PEAK_SUN_HOURS
+
+            daily_kwh = pv_area * eff * pr * hours
+            yearly_kwh = daily_kwh * 365
+
+            # SAVE
+            if mask is not None:
+                storage.save_mask(sample_id, mask, "mask.png")
+
+            storage.save_image(sample_id, img, "overlay.png")
+
+            output = {
+                "sample_id": sample_id,
+                "lat": None,
+                "lon": None,
+                "has_solar": bool(inf.get("has_solar")),
+                "confidence": float(inf.get("confidence")),
+                "pv_area_sqm_est": pv_area,
+                "qc_status": qc_status,
+                "estimated_kwh_per_day": round(daily_kwh, 3),
+                "estimated_kwh_per_year": round(yearly_kwh, 2),
+                "image_source": "UPLOAD"
+            }
+
+            storage.save_json(sample_id, output)
+            return safe_response(200, {"samples": [output]})
+
+        # ==============================================================
+        # CASE 3: FILE UPLOAD (CSV/XLSX)
+        # ==============================================================
+        if input_type == "file":
             if file is None:
-                return JSONResponse(status_code=400, content={"error": "file upload required for file input"})
+                return safe_response(400, {"error": "file required"})
 
             raw = await file.read()
-            filename = getattr(file, "filename", "") or ""
-            # choose parser based on extension or try both
-            df = None
+
             try:
-                if filename.lower().endswith(".csv"):
+                if file.filename.lower().endswith(".csv"):
                     df = pd.read_csv(io.BytesIO(raw))
                 else:
-                    # try xlsx
-                    df = pd.read_excel(io.BytesIO(raw), engine="openpyxl")
-            except Exception as e:
-                # as fallback try csv decode
-                try:
-                    df = pd.read_csv(io.StringIO(raw.decode("utf-8")))
-                except Exception:
-                    return JSONResponse(status_code=400, content={"error": "Failed to parse file. Ensure CSV or XLSX."})
+                    df = pd.read_excel(io.BytesIO(raw))
+            except Exception:
+                return safe_response(400, {"error": "Invalid CSV/XLSX format"})
 
-            if df is None or df.empty:
-                return JSONResponse(status_code=400, content={"error": "Uploaded file is empty or couldn't be parsed."})
+            if df.empty:
+                return safe_response(400, {"error": "file empty"})
 
-            # detect columns flexibly
-            cols_lower = {c.lower().strip(): c for c in df.columns}
-            sample_col = None
-            for cand in ["sample_id", "sampleid", "id", "sid", "sample"]:
-                if cand in cols_lower:
-                    sample_col = cols_lower[cand]; break
-            if sample_col is None:
-                # fallback: any column with 'id' or sample
-                for k, v in cols_lower.items():
-                    if "sample" in k or k.endswith("id"):
-                        sample_col = v; break
-
-            lat_col = None
-            for k, v in cols_lower.items():
-                if "lat" in k:
-                    lat_col = v; break
-            lon_col = None
-            for k, v in cols_lower.items():
-                if "lon" in k or "long" in k:
-                    lon_col = v; break
+            # Detect columns
+            cols = {c.lower().strip(): c for c in df.columns}
+            lat_col = next((cols[c] for c in cols if "lat" in c), None)
+            lon_col = next((cols[c] for c in cols if "lon" in c), None)
+            id_col = next((cols[c] for c in cols if "id" in c), None)
 
             if not lat_col or not lon_col:
-                return JSONResponse(status_code=400, content={"error": "Excel/CSV must contain latitude and longitude columns."})
+                return safe_response(400, {"error": "File must contain latitude & longitude columns"})
 
-            # iterate rows (up to 100)
-            count = 0
-            for idx, row in df.iterrows():
-                if count >= 100:
-                    break
-                count += 1
+            results = []
 
-                # sample id from file (string). If missing generate one.
-                sample_raw = None
-                if sample_col is not None:
-                    sample_raw = row[sample_col]
-                    if pd.isna(sample_raw):
-                        sample_id = f"auto-{uuid.uuid4().hex[:8]}"
-                    else:
-                        sample_id = str(sample_raw)
-                else:
-                    sample_id = f"auto-{uuid.uuid4().hex[:8]}"
+            for idx, row in df.head(100).iterrows():
+                sample_id = str(row[id_col]) if id_col else f"auto-{uuid.uuid4().hex[:8]}"
 
                 try:
                     lat = float(row[lat_col])
                     lon = float(row[lon_col])
-                except Exception as e:
-                    # skip row if lat/lon invalid
-                    results.append({
-                        "sample_id": sample_id,
-                        "lat": None,
-                        "lon": None,
-                        "has_solar": False,
-                        "estimated_kwh_per_day": 0,
-                        "estimated_kwh_per_year": 0,
-                        "error": f"Invalid lat/lon: {e}"
-                    })
+                except:
+                    results.append({"sample_id": sample_id, "error": "Invalid lat/lon"})
                     continue
 
-                # fetch image and analyze
                 try:
                     img = fetch_osm_image(lat, lon)
                 except Exception as e:
-                    # can't fetch image, still record row
-                    results.append({
-                        "sample_id": sample_id,
-                        "lat": lat,
-                        "lon": lon,
-                        "has_solar": False,
-                        "estimated_kwh_per_day": 0,
-                        "estimated_kwh_per_year": 0,
-                        "error": f"Image fetch failed: {e}"
-                    })
+                    results.append({"sample_id": sample_id, "error": str(e)})
                     continue
 
                 inf = analyze_image(img, buffer_radius_sqft=config.BUFFER_RADIUS_SMALL_SQFT)
-                used_radius = config.BUFFER_RADIUS_SMALL_SQFT
-                if not inf.get("has_solar", False):
-                    used_radius = config.BUFFER_RADIUS_LARGE_SQFT
-                    inf2 = analyze_image(img, buffer_radius_sqft=used_radius)
-                    if inf2.get("confidence", 0.0) > inf.get("confidence", 0.0):
+
+                if not inf.get("has_solar"):
+                    inf2 = analyze_image(img, buffer_radius_sqft=config.BUFFER_RADIUS_LARGE_SQFT)
+                    if inf2.get("confidence", 0) > inf.get("confidence", 0):
                         inf = inf2
 
-                pv_area = 0.0
-                if inf.get("mask") is not None:
-                    pv_area = area.mask_area_sqm(inf["mask"], meters_per_pixel=meters_per_pixel)
+                mask = inf.get("mask")
+                pv_area = area.mask_area_sqm(mask, meters_per_pixel) if mask else 0
+                qc_status = qc.qc_status(img, inf)
 
-                qc_value = qc.qc_status(img, inf)
-
-                panel_eff = config.PANEL_EFFICIENCY
-                perf_ratio = config.PERFORMANCE_RATIO
+                eff = config.PANEL_EFFICIENCY
+                pr = config.PERFORMANCE_RATIO
                 hours = config.DEFAULT_PEAK_SUN_HOURS
-                daily_kwh = pv_area * 1000 * panel_eff * perf_ratio * hours / 1000.0
+
+                daily_kwh = pv_area * eff * pr * hours
                 yearly_kwh = daily_kwh * 365
 
                 output = {
                     "sample_id": sample_id,
                     "lat": lat,
                     "lon": lon,
-                    "has_solar": bool(inf.get("has_solar", False)),
-                    "confidence": float(inf.get("confidence", 0.0)),
-                    "pv_area_sqm_est": float(round(pv_area, 4)),
-                    "buffer_radius_sqft": used_radius,
-                    "qc_status": qc_value,
-                    "bbox_or_mask": "",
-                    "image_metadata": {"source": "OSM_PUBLIC"}
+                    "has_solar": bool(inf.get("has_solar")),
+                    "confidence": float(inf.get("confidence")),
+                    "pv_area_sqm_est": pv_area,
+                    "qc_status": qc_status,
+                    "estimated_kwh_per_day": round(daily_kwh, 3),
+                    "estimated_kwh_per_year": round(yearly_kwh, 2),
                 }
-
-                # save mask + overlay
-                if inf.get("mask") is not None:
-                    storage.save_mask(sample_id, inf["mask"], name="mask.png")
-                    overlay = img.copy()
-                    draw = ImageDraw.Draw(overlay)
-                    if inf.get("bbox"):
-                        x0, y0, x1, y1 = inf["bbox"]
-                        draw.rectangle([x0, y0, x1, y1], outline="yellow", width=6)
-                    try:
-                        mask_rgb = inf["mask"].convert("L").resize(img.size).point(lambda p: 255 if p > 128 else 0)
-                        mask_colored = ImageOps.colorize(mask_rgb, black="black", white="yellow")
-                        overlay = Image.blend(overlay, mask_colored, alpha=0.35)
-                    except Exception:
-                        pass
-                    storage.save_image(sample_id, overlay, name="overlay.png")
-                    output["bbox_or_mask"] = storage.save_mask(sample_id, inf["mask"], name="mask.png")
-                else:
-                    storage.save_image(sample_id, img, name="overlay.png")
-
-                storage.save_json(sample_id, output)
-
-                output["estimated_kwh_per_day"] = round(daily_kwh, 3)
-                output["estimated_kwh_per_year"] = round(yearly_kwh, 2)
 
                 results.append(output)
 
-            return JSONResponse(status_code=200, content={"samples": results})
+            return safe_response(200, {"samples": results})
 
-        else:
-            return JSONResponse(status_code=400, content={"error": "invalid input_type"})
-
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-
-# -------------------------
-# /api/calculate-electricity
-# expects JSON body: { "sample_id": "..." }
-# -------------------------
-@router.post("/calculate-electricity")
-async def calculate_electricity(payload: dict = Body(...)):
-    try:
-        sample_id = payload.get("sample_id")
-        if not sample_id:
-            return JSONResponse(status_code=400, content={"error": "sample_id required in body"})
-
-        path = storage.sample_output_path(sample_id)
-        json_file = os.path.join(path, f"{sample_id}.json")
-        if not os.path.exists(json_file):
-            return JSONResponse(status_code=404, content={"error": "sample_id not found"})
-
-        import json
-        with open(json_file, "r", encoding="utf-8") as f:
-            payload = json.load(f)
-
-        area_m2 = float(payload.get("pv_area_sqm_est", 0.0))
-        if area_m2 <= 0:
-            return JSONResponse(status_code=400, content={"error": "pv_area_sqm_est is zero or missing"})
-
-        panel_eff = config.PANEL_EFFICIENCY
-        perf_ratio = config.PERFORMANCE_RATIO
-        hours = config.DEFAULT_PEAK_SUN_HOURS
-
-        daily_kwh = area_m2 * 1000 * panel_eff * perf_ratio * hours / 1000.0
-        yearly_kwh = daily_kwh * 365
-
-        resp = {
-            "sample_id": sample_id,
-            "estimated_kwh_per_day": round(daily_kwh, 3),
-            "estimated_kwh_per_year": round(yearly_kwh, 2)
-        }
-        return JSONResponse(status_code=200, content=resp)
+        return safe_response(400, {"error": "Invalid input_type"})
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return safe_response(500, {"error": str(e)})
