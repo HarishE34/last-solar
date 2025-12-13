@@ -2,10 +2,10 @@
   "sample_id": "S007",
   "lat": 11.0168,
   "lon": 76.9558,
-  "has_solar": true,
-  "confidence": 0.463,
-  "pv_area_sqm_est": 2269.35,
+  "has_solar": false,
+  "confidence": 0.3,
+  "pv_area_sqm_est": 0.0,
   "qc_status": "NOT_VERIFIABLE",
-  "estimated_kwh_per_day": 1225.449,
-  "estimated_kwh_per_year": 447288.88
+  "estimated_kwh_per_day": 0.0,
+  "estimated_kwh_per_year": 0.0
 }

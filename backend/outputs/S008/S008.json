@@ -3,7 +3,7 @@
   "lat": 10.8505,
   "lon": 76.2711,
   "has_solar": false,
-  "confidence": 0.539,
+  "confidence": 0.3,
   "pv_area_sqm_est": 0.0,
   "qc_status": "NOT_VERIFIABLE",
   "estimated_kwh_per_day": 0.0,

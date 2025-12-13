@@ -1,7 +1,7 @@
 {
-  "sample_id": "S003",
-  "lat": 17.385,
-  "lon": 78.4867,
+  "sample_id": "auto-739c663d",
+  "lat": 9.9387,
+  "lon": 77.7783,
   "has_solar": false,
   "confidence": 0.3,
   "pv_area_sqm_est": 0.0,

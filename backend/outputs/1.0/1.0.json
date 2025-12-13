@@ -1,14 +1,11 @@
 {
   "sample_id": "1.0",
-  "lat": 12.9716,
-  "lon": 77.5946,
-  "has_solar": true,
-  "confidence": 0.643,
-  "pv_area_sqm_est": 2269.35,
-  "buffer_radius_sqft": 1200,
+  "lat": 13.037906,
+  "lon": 80.208697,
+  "has_solar": false,
+  "confidence": 0.3,
+  "pv_area_sqm_est": 0.0,
   "qc_status": "NOT_VERIFIABLE",
-  "bbox_or_mask": "C:\\Users\\E HARISH\\OneDrive\\Desktop\\panel\\sun-eye-intelligence\\backend\\outputs\\1.0\\mask.png",
-  "image_metadata": {
-    "source": "OSM_PUBLIC"
-  }
+  "estimated_kwh_per_day": 0.0,
+  "estimated_kwh_per_year": 0.0
 }
