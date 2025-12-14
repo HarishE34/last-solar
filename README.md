@@ -30,7 +30,8 @@ pip install fastapi<br>
 pip install requests<br>
 pip install pandas<br>
 pip install Pillow<br>
-pip install python-multipart<br>
+pip install python-multipart
+uvicorn app.main:app --reload<br>
 </div>
 
 <h3>📌 Frontend Setup</h3>
